@@ -3,57 +3,113 @@
 class PostController extends \BaseController {
 
 	/**
-	 * Display a listing of the resource.
-	 *
-	 * @return Response
+	 * param for class injection
+	 * @var obj
 	 */
-	public function index()
+	private $postRepo;
+
+	function __construct(postRepository $postRepository)
 	{
-		return Post::all();
+		/**
+		 * instaciate class injection
+		 * @var obj
+		 */
+		$this->postRepo = $postRepository;
 	}
 
 	/**
-	 * Store a newly created resource in storage.
+	 * get all posts, 15 per page
 	 *
 	 * @return Response
 	 */
-	public function store()
+	public function getPosts()
 	{
+		return $this->postRepo->getPosts( 15 );
+	}
+
+	/**
+	 * create a new post
+	 *
+	 * @return Response
+	 */
+	public function createPost()
+	{
+		// generate and add UUID to request for mass assignment
+		$request = $this->postRepo->prepareRequest();
+
+		// Validate post
+		$validator = $this->postRepo->createPostValidation($request);
+
+		// if validation failed
+		if ($validator->fails())
+			return $this->postRepo->createPostValidationFailed($request, $validator);
+
 		// create new post
-		return Post::create($this->postRequest(Request::all()));
+		$post = Post::create($request);
+		
+		// if post actullay created return 201 status
+		if ( ! is_null($post) )
+			return $this->postRepo->createPostOkResponse($post);
+
+		// if not return 500 server error
+		return $this->postRepo->createPostUnexpectedError();
 	}
 
 	/**
-	 * Display the specified resource.
+	 * Show single post.
 	 *
 	 * @param  int/array/string  $id
 	 * @return Response
 	 */
-	public function show($id)
+	public function getPost($id)
 	{
-		return Post::where('uuid', $id)
-			->orWhere('id', $id)
-			->get();
+		// get post
+		$post = Post::find($id);
+
+		// if post exists
+		if ( ! is_null($post) )
+			return $this->postRepo->getPost($post);
+
+		// if resource not found
+		return $this->postRepo->notFound($id);
 	}
 
 	/**
 	 * Update the specified resource in storage.
+	 * @todo if post table parameter are more that 2, it's better to create a functin for request array
+	 *       insted of getting Input instance.
 	 *
 	 * @param  int  $id
 	 * @return Response
 	 */
-	public function update($id)
+	public function updatePost($id)
 	{
 		// get post
-		$post = $this->getPost($id);
+		$post = Post::find($id);
 
-		// update post just for title and desc
-		$post = $post->update( $this->postRequest( Input::only('title', 'description'), $post->uuid ) );
+		if ( ! is_null($post) ) :
+			$validator = $this->postRepo->updatePostValidation();
 
-		// return result boolean/error
-		return ['updated' => $post];
+			// if failed throw new exception with error message
+			if ($validator->fails())
+				return $this->postRepo->updatePostValidationFailed($validator);
+
+			// update specefic resource
+			$post = $post->update( Input::only('title', 'body') );
+
+			// if post successfuly updated
+			if ($post)
+				return $this->postRepo->updatePostOkResponse();
+
+			// else return error
+			return $this->postRepo->updatePostUnexpectedError();
+		else :
+
+			// if resource not found
+			return $this->postRepo->notFound($id);
+		endif;
+		
 	}
-
 
 	/**
 	 * Remove the specified resource from storage.
@@ -61,64 +117,16 @@ class PostController extends \BaseController {
 	 * @param  int/array  $id
 	 * @return Response
 	 */
-	public function destroy($id)
+	public function deletePost($id)
 	{
 		// delete base on id
-		$post = Post::destroy(explode(',', $id));
+		$post = Post::destroy( explode (',', $id) );
 
-		// delete base on uuid
-		$post += Post::whereIn('uuid', explode(',', $id))->delete();
+		if ( $post == 0 )
+			// no resource deleted, return error object
+			return $this->postRepo->notFound(explode (',', $id));
 
-		// return number of rows that deleted
-		return ['deleted' => $post];
-	}
-
-	/**
-	 * add UUID to request array
-	 * @param  array $request current request
-	 * @return array          add uuid element to request array
-	 */
-	private function postRequest($request, $uuid = '')
-	{
-		if ($uuid == '')
-			$request['uuid'] = Uuid::generate(4)->string;
-		else
-			$request['uuid'] = $uuid;
-
-		// validate request
-		$validator = Validator::make(
-		    $request,
-		    array(
-		        'title' => 'required',
-		        'description' => 'required|min:3',
-		        'uuid' => 'required'
-		    )
-		);
-
-		// if failed throw new exception with error message
-		if ($validator->fails())
-		{
-			throw new Exception($validator->messages());
-		}
-
-		return $request;
-	}	
-
-
-	/**
-	 * Display the specified resource.
-	 *
-	 * @param  int  $id
-	 * @return Response
-	 */
-	private function getPost($id)
-	{
-		// return post base on the post id
-		if ( is_numeric($id) )
-			return Post::findOrFail($id);
-
-		// return post based on uuid
-		else
-			return Post::where('uuid', $id)->firstOrFail();
+		// otherwise return delete response
+		return $this->postRepo->deletePostOkResponse();
 	}
 }

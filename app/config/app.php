@@ -52,7 +52,7 @@ return array(
 	|
 	*/
 
-	'locale' => 'en',
+	'locale' => 'fa',
 
 	/*
 	|--------------------------------------------------------------------------
@@ -65,7 +65,7 @@ return array(
 	|
 	*/
 
-	'fallback_locale' => 'en',
+	'fallback_locale' => 'fa',
 
 	/*
 	|--------------------------------------------------------------------------
@@ -121,7 +121,8 @@ return array(
 		'Illuminate\Validation\ValidationServiceProvider',
 		'Illuminate\View\ViewServiceProvider',
 		'Illuminate\Workbench\WorkbenchServiceProvider',
-
+//		'Amirmasoud\ServiceProvider\PostServiceProvider',
+		//'MyApp\Providers\TestServiceProvider',
 	),
 
 	/*

@@ -14,5 +14,10 @@ class Post extends Eloquent {
 	 *
 	 * @var array
 	 */
-	protected $fillable = ['title', 'description', 'uuid'];
+	protected $fillable = ['title', 'body', 'id'];
+
+	public function setIdAttribute($value)
+    {
+    	$this->attributes['id'] = Uuid::generate(4)->string;
+    }
 }
