@@ -1,6 +1,6 @@
 <?php
 
-class postRepository
+class postService
 {
 	/**
 	 * Get all posts
@@ -21,7 +21,7 @@ class postRepository
         $postsResponse['to']           = $posts->getTo();
 
         // self link
-		$postsResponse['links'] = ['self' => action('PostController@getPosts')];
+		$postsResponse['links'] = ['self' => action('PostController@index')];
 
 		// data param
 		foreach ($posts as $post) :
@@ -112,13 +112,13 @@ class postRepository
 			'id' => $post->id,
 			'attributes' => $post,
 			'links' => array(
-						'self' => action('PostController@getPost', $post->id)
+						'self' => action('PostController@show', $post->id)
 						)
 			);
 
 		// Create Response header
 		$response = Response::make($postResponse, 201);
-		$response->header('Location', action('PostController@getPost', $post->id));
+		$response->header('Location', action('PostController@show', $post->id));
 		$response->header('Content-Type', 'application/vnd.api+json');
 
 		return $response;

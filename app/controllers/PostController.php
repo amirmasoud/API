@@ -6,15 +6,15 @@ class PostController extends \BaseController {
 	 * param for class injection
 	 * @var obj
 	 */
-	private $postRepo;
+	private $postService;
 
-	function __construct(postRepository $postRepository)
+	function __construct(postService $postService)
 	{
 		/**
 		 * instaciate class injection
 		 * @var obj
 		 */
-		$this->postRepo = $postRepository;
+		$this->postService = $postService;
 	}
 
 	/**
@@ -22,9 +22,9 @@ class PostController extends \BaseController {
 	 *
 	 * @return Response
 	 */
-	public function getPosts()
+	public function index()
 	{
-		return $this->postRepo->getPosts( 15 );
+		return $this->postService->getPosts( 15 );
 	}
 
 	/**
@@ -32,27 +32,27 @@ class PostController extends \BaseController {
 	 *
 	 * @return Response
 	 */
-	public function createPost()
+	public function store()
 	{
 		// generate and add UUID to request for mass assignment
-		$request = $this->postRepo->prepareRequest();
+		$request = $this->postService->prepareRequest();
 
 		// Validate post
-		$validator = $this->postRepo->createPostValidation($request);
+		$validator = $this->postService->createPostValidation($request);
 
 		// if validation failed
 		if ($validator->fails())
-			return $this->postRepo->createPostValidationFailed($request, $validator);
+			return $this->postService->createPostValidationFailed($request, $validator);
 
 		// create new post
 		$post = Post::create($request);
 		
 		// if post actullay created return 201 status
 		if ( ! is_null($post) )
-			return $this->postRepo->createPostOkResponse($post);
+			return $this->postService->createPostOkResponse($post);
 
 		// if not return 500 server error
-		return $this->postRepo->createPostUnexpectedError();
+		return $this->postService->createPostUnexpectedError();
 	}
 
 	/**
@@ -61,17 +61,17 @@ class PostController extends \BaseController {
 	 * @param  int/array/string  $id
 	 * @return Response
 	 */
-	public function getPost($id)
+	public function show($id)
 	{
 		// get post
 		$post = Post::find($id);
 
 		// if post exists
 		if ( ! is_null($post) )
-			return $this->postRepo->getPost($post);
+			return $this->postService->getPost($post);
 
 		// if resource not found
-		return $this->postRepo->notFound($id);
+		return $this->postService->notFound($id);
 	}
 
 	/**
@@ -82,31 +82,31 @@ class PostController extends \BaseController {
 	 * @param  int  $id
 	 * @return Response
 	 */
-	public function updatePost($id)
+	public function update($id)
 	{
 		// get post
 		$post = Post::find($id);
 
 		if ( ! is_null($post) ) :
-			$validator = $this->postRepo->updatePostValidation();
+			$validator = $this->postService->updatePostValidation();
 
 			// if failed throw new exception with error message
 			if ($validator->fails())
-				return $this->postRepo->updatePostValidationFailed($validator);
+				return $this->postService->updatePostValidationFailed($validator);
 
 			// update specefic resource
 			$post = $post->update( Input::only('title', 'body') );
 
 			// if post successfuly updated
 			if ($post)
-				return $this->postRepo->updatePostOkResponse();
+				return $this->postService->updatePostOkResponse();
 
 			// else return error
-			return $this->postRepo->updatePostUnexpectedError();
+			return $this->postService->updatePostUnexpectedError();
 		else :
 
 			// if resource not found
-			return $this->postRepo->notFound($id);
+			return $this->postService->notFound($id);
 		endif;
 		
 	}
@@ -117,16 +117,16 @@ class PostController extends \BaseController {
 	 * @param  int/array  $id
 	 * @return Response
 	 */
-	public function deletePost($id)
+	public function destroy($id)
 	{
 		// delete base on id
 		$post = Post::destroy( explode (',', $id) );
 
 		if ( $post == 0 )
 			// no resource deleted, return error object
-			return $this->postRepo->notFound(explode (',', $id));
+			return $this->postService->notFound(explode (',', $id));
 
 		// otherwise return delete response
-		return $this->postRepo->deletePostOkResponse();
+		return $this->postService->deletePostOkResponse();
 	}
 }
